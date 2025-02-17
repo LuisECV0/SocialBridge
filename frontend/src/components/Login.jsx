@@ -1,59 +1,53 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaUser, FaLock, FaEnvelope } from 'react-icons/fa';
 import { iniciarSesion, crearUsuario } from '../services/api';
+import './login.css';  // Asegúrate de importar el archivo CSS
 
 function Login() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [mensajeError, setMensajeError] = useState('');
-  const [esRegistro, setEsRegistro] = useState(false); // Estado para alternar entre login y registro
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMensajeError(''); // Limpiar mensajes de error
-
-    if (!email || !password || (esRegistro && !username)) {
-      setMensajeError('Todos los campos son obligatorios');
+    if (!email || !password || (!isLogin && !username)) {
+      alert('Todos los campos son obligatorios');
       return;
     }
 
-    if (esRegistro) {
-      // Registro de usuario
-      const nuevoUsuario = await crearUsuario(username, email, password);
-      if (nuevoUsuario) {
-        alert('Cuenta creada exitosamente');
-        setEsRegistro(false); // Volver a login
+    if (isLogin) {
+      const response = await iniciarSesion(email, password);
+      if (response.success) {
+        alert('Inicio de sesión exitoso');
+        navigate('/dashboard');
       } else {
-        setMensajeError('Error al crear cuenta');
+        alert('Correo o contraseña incorrectos');
       }
     } else {
-      // Inicio de sesión
-      const response = await iniciarSesion(email, password);
-      if (response.token) {
-        localStorage.setItem('token', response.token); // Guardar token en localStorage
-        alert('Inicio de sesión exitoso');
-        navigate('/dashboard'); // Redirigir
+      const response = await crearUsuario(username, email, password);
+      if (response) {
+        alert('Cuenta creada exitosamente. Ahora puedes iniciar sesión.');
+        setIsLogin(true);
       } else {
-        setMensajeError('Correo o contraseña incorrectos');
+        alert('Error al crear cuenta');
       }
     }
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100">
-      <div className="card p-4" style={{ width: '350px' }}>
-        <h2 className="text-center">{esRegistro ? 'Crear Cuenta' : 'Iniciar Sesión'}</h2>
-
-        {mensajeError && <div className="alert alert-danger p-1 text-center">{mensajeError}</div>}
+    <div className="login-container">
+      <div className="login-card">
+        <h2>{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
 
         <form onSubmit={handleSubmit}>
-          {esRegistro && (
-            <div className="mb-2">
+          {!isLogin && (
+            <div className="input-container">
+              <FaUser className="input-icon" />
               <input
                 type="text"
-                className="form-control"
                 placeholder="Nombre de usuario"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -61,40 +55,33 @@ function Login() {
             </div>
           )}
 
-          <div className="mb-2">
+          <div className="input-container">
+            <FaEnvelope className="input-icon" />
             <input
               type="email"
-              className="form-control"
-              placeholder="Correo electrónicoo"
+              placeholder="Correo electrónico"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
-          <div className="mb-3">
+          <div className="input-container">
+            <FaLock className="input-icon" />
             <input
               type="password"
-              className="form-control"
               placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
-          <button type="submit" className="btn btn-primary w-100">
-            {esRegistro ? 'Registrarse' : 'Iniciar sesión'}
+          <button type="submit" className="submit-btn">
+            {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
           </button>
         </form>
 
-        <p className="mt-3 text-center">
-          {esRegistro ? '¿Ya tienes una cuenta?' : '¿No tienes cuenta?'}
-          <button
-            type="button"
-            className="btn btn-link"
-            onClick={() => setEsRegistro(!esRegistro)}
-          >
-            {esRegistro ? 'Iniciar sesión' : 'Regístrate'}
-          </button>
+        <p className="toggle-link" onClick={() => setIsLogin(!isLogin)}>
+          {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
         </p>
       </div>
     </div>
